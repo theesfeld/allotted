@@ -1,5 +1,7 @@
 # allotted
 
+[![PyPI](https://img.shields.io/pypi/v/allotted.svg)](https://pypi.org/project/allotted/)
+
 `allotted` keeps one time budget for a whole call. You set it at the edge of a request, a job, or a command. Every function inside that call can see the time that is left, and a nested scope can only shorten the budget it inherited.
 
 ```python
@@ -32,19 +34,27 @@ The same budget works in synchronous code, in `asyncio`, and in a worker thread.
 
 ## Install
 
-Python 3.11 or newer. The library has no runtime dependencies.
+Python 3.11 or newer. The library has no runtime dependencies. Releases are on [PyPI](https://pypi.org/project/allotted/).
+
+Add it to a project with [uv](https://docs.astral.sh/uv/):
 
 ```sh
-pip install git+https://github.com/theesfeld/allotted.git
+uv add allotted
 ```
 
-A checkout you are working on:
+Install it into the current environment:
 
 ```sh
-pip install -e '.[dev]'
+uv pip install allotted
 ```
 
-Import the package as `allotted`.
+```sh
+pip install allotted
+```
+
+```python
+from allotted import deadline, io_timeout, check
+```
 
 ## Contents
 
@@ -589,6 +599,12 @@ Context variables do not cross a `threading.Thread` or a `ThreadPoolExecutor` wo
 A deadline and its parent must share one clock object. Mixing `ManualClock` with `SystemClock` inside one nested budget raises `RuntimeError`.
 
 ## Development
+
+```sh
+uv venv
+uv pip install -e '.[dev]'
+uv run pytest
+```
 
 ```sh
 python -m venv .venv
