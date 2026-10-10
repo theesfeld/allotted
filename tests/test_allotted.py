@@ -9,7 +9,7 @@ import threading
 
 import pytest
 
-from within import (
+from allotted import (
     DeadlineExceeded,
     ManualClock,
     async_bounded,
@@ -151,7 +151,7 @@ def test_origin_points_at_the_caller() -> None:
         with pytest.raises(DeadlineExceeded) as caught:
             place()
     assert "place" in caught.value.span.origin
-    assert "test_within.py" in caught.value.span.origin
+    assert "test_allotted.py" in caught.value.span.origin
 
 
 def test_empty_purpose_uses_the_caller() -> None:
@@ -160,7 +160,7 @@ def test_empty_purpose_uses_the_caller() -> None:
             with deadline(0):
                 pass
     assert "test_empty_purpose_uses_the_caller" in caught.value.purpose
-    assert "test_within.py" in caught.value.purpose
+    assert "test_allotted.py" in caught.value.purpose
 
 
 def test_shield_hides_checks_and_still_clamps() -> None:
@@ -422,7 +422,7 @@ def test_async_origin_points_at_the_caller() -> None:
     with pytest.raises(DeadlineExceeded) as caught:
         asyncio.run(place())
     assert "place" in caught.value.span.origin
-    assert "test_within.py" in caught.value.span.origin
+    assert "test_allotted.py" in caught.value.span.origin
 
 
 def test_async_manual_clock_is_refused() -> None:

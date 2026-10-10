@@ -1,9 +1,9 @@
-# within
+# allotted
 
-`within` keeps one time budget for a whole call. You set it at the edge of a request, a job, or a command. Every function inside that call can see the time that is left, and a nested scope can only shorten the budget it inherited.
+`allotted` keeps one time budget for a whole call. You set it at the edge of a request, a job, or a command. Every function inside that call can see the time that is left, and a nested scope can only shorten the budget it inherited.
 
 ```python
-from within import deadline, io_timeout, check
+from allotted import deadline, io_timeout, check
 
 def fetch(url: str) -> bytes:
     import urllib.request
@@ -35,7 +35,7 @@ The same budget works in synchronous code, in `asyncio`, and in a worker thread.
 Python 3.11 or newer. The library has no runtime dependencies.
 
 ```sh
-pip install git+https://github.com/theesfeld/within.git
+pip install git+https://github.com/theesfeld/allotted.git
 ```
 
 A checkout you are working on:
@@ -44,7 +44,7 @@ A checkout you are working on:
 pip install -e '.[dev]'
 ```
 
-Import the package as `within`.
+Import the package as `allotted`.
 
 ## Contents
 
@@ -71,7 +71,7 @@ Import the package as `within`.
 `deadline` is a context manager. Pass a duration in seconds, and an optional `purpose` that shows up in the error.
 
 ```python
-from within import deadline, check
+from allotted import deadline, check
 
 with deadline(2.5, purpose="render page"):
     check()
@@ -91,7 +91,7 @@ An absolute instant uses `until`. The number is a reading of the active clock, t
 
 ```python
 import time
-from within import deadline
+from allotted import deadline
 
 with deadline(until=time.monotonic() + 2.5, purpose="render page"):
     render()
@@ -104,7 +104,7 @@ Pass exactly one of `seconds` or `until`. `seconds` is a finite number greater t
 An inner scope ends at the earlier of the instant it asked for and the instant its parent already had.
 
 ```python
-from within import deadline
+from allotted import deadline
 
 with deadline(2.5, purpose="render page"):
     with deadline(10, purpose="fetch") as fetch:
@@ -135,7 +135,7 @@ These four functions read the deadline that is visible in the current context.
 `shield()` hides the current deadline from all four calls. Inside the shield, `remaining()` is `None`, `expired()` is `False`, `current()` is `None`, and `check()` returns. A deadline opened inside the shield is visible again, and it is still clamped to the outer budget.
 
 ```python
-from within import deadline, shield, check, remaining
+from allotted import deadline, shield, check, remaining
 
 with deadline(2.5, purpose="render page"):
     with shield():
@@ -159,7 +159,7 @@ It never returns `0` while a deadline is active. A timeout of `0` means non-bloc
 
 ```python
 import subprocess
-from within import deadline, io_timeout, check
+from allotted import deadline, io_timeout, check
 
 def convert(src: str, dest: str) -> None:
     check()
@@ -191,7 +191,7 @@ An exception that the block is already raising is left alone. A `RuntimeError` i
 Catch the deadline outside the `with`. A handler inside the same scope is still inside a budget that has run out, so leaving the block raises again.
 
 ```python
-from within import DeadlineExceeded, deadline
+from allotted import DeadlineExceeded, deadline
 
 try:
     with deadline(1, purpose="fetch"):
@@ -208,7 +208,7 @@ For asyncio, a nested `async_deadline` that ends strictly sooner than its parent
 
 ```python
 import asyncio
-from within import DeadlineExceeded, async_deadline
+from allotted import DeadlineExceeded, async_deadline
 
 async def render(url: str) -> bytes:
     async with async_deadline(2.5, purpose="render page"):
@@ -237,7 +237,7 @@ A synchronous `deadline` inside `async_deadline` pulls the task timer earlier, s
 
 `str(exc)` is the block shown at the top of this document. Each line gives the purpose, the seconds that scope requested, whether a parent clamped it, and the file, line, and function that opened it.
 
-A `TimeoutError` raised by your own code, such as a socket library, is left as that error. `within` rewrites a timeout only when its own timer fired.
+A `TimeoutError` raised by your own code, such as a socket library, is left as that error. `allotted` rewrites a timeout only when its own timer fired.
 
 Cancelling a task with `task.cancel()` stays a `CancelledError`. A deadline and an outside cancellation are different events.
 
@@ -246,7 +246,7 @@ Cancelling a task with `task.cancel()` stays a `CancelledError`. A deadline and 
 Put the budget on the operation the user is waiting for. Deeper functions call `check` and `io_timeout` and stay free of timeout parameters.
 
 ```python
-from within import deadline, io_timeout, check
+from allotted import deadline, io_timeout, check
 
 def query(sql: str, args: tuple) -> list:
     check()
@@ -265,7 +265,7 @@ def report(user_id: int) -> dict:
 `shield` is for bookkeeping that should proceed after you already know the budget is spent, such as writing a metric. It hides `check` and `remaining`. It does not add time, and a deadline opened inside it is clamped to the outer scope.
 
 ```python
-from within import deadline, shield
+from allotted import deadline, shield
 
 with deadline(2, purpose="report"):
     try:
@@ -281,7 +281,7 @@ with deadline(2, purpose="report"):
 
 ```python
 import asyncio
-from within import async_deadline, deadline
+from allotted import async_deadline, deadline
 
 async def render(url: str) -> bytes:
     async with async_deadline(2.5, purpose="render page"):
@@ -311,7 +311,7 @@ A new thread starts with an empty context. `remaining()` in that thread is `None
 
 ```python
 from concurrent.futures import ThreadPoolExecutor
-from within import deadline, propagate
+from allotted import deadline, propagate
 
 def work(item: str) -> str:
     return transform(item)
@@ -338,7 +338,7 @@ with deadline(5, purpose="batch") as span:
 
 ```python
 import threading
-from within import deadline, propagate
+from allotted import deadline, propagate
 
 with deadline(5, purpose="batch"):
     thread = threading.Thread(target=propagate(work), args=(item,))
@@ -350,7 +350,7 @@ with deadline(5, purpose="batch"):
 Production code reads `SystemClock`, a thin wrapper around `time.monotonic()`. Tests install `ManualClock`. It moves only when `advance` is called, so a budget can expire without sleeping.
 
 ```python
-from within import DeadlineExceeded, ManualClock, check, deadline, remaining
+from allotted import DeadlineExceeded, ManualClock, check, deadline, remaining
 
 def test_report_stops_at_the_budget() -> None:
     with ManualClock() as clock:
@@ -368,7 +368,7 @@ Deadlines capture the clock that is active when they open. A nested deadline tha
 `use_clock` installs any object with a `now()` method that returns a finite number of seconds. `ManualClock` is that object plus `advance` and a context manager.
 
 ```python
-from within import deadline, use_clock
+from allotted import deadline, use_clock
 
 class OffsetClock:
     def __init__(self) -> None:
@@ -388,7 +388,7 @@ with use_clock(OffsetClock()) as clock:
 `bounded` opens a `deadline` for one synchronous call. `async_bounded` opens an `async_deadline` for one coroutine function. The default purpose is the function's qualified name. The origin recorded on the span is the function definition.
 
 ```python
-from within import async_bounded, bounded
+from allotted import async_bounded, bounded
 
 @bounded(1, purpose="parse")
 def parse(raw: str) -> dict:
@@ -408,7 +408,7 @@ Decorating a coroutine function with `bounded`, or a plain function with `async_
 Open the budget where the request enters. Clients, queries, and renders underneath call `check` and `io_timeout`.
 
 ```python
-from within import async_deadline, io_timeout, check
+from allotted import async_deadline, io_timeout, check
 
 async def handle(request):
     async with async_deadline(2.5, purpose=f"{request.method} {request.path}"):
@@ -429,7 +429,7 @@ async def get(user_id: int):
 The fast attempt has to end strictly sooner than the outer budget, and the handler has to sit outside that inner block.
 
 ```python
-from within import DeadlineExceeded, async_deadline
+from allotted import DeadlineExceeded, async_deadline
 
 async def load(url: str) -> bytes:
     async with async_deadline(3, purpose="load"):
@@ -446,7 +446,7 @@ async def load(url: str) -> bytes:
 
 ```python
 import subprocess
-from within import deadline, io_timeout
+from allotted import deadline, io_timeout
 
 def identify(path: str) -> str:
     with deadline(5, purpose="identify"):
@@ -466,7 +466,7 @@ def identify(path: str) -> str:
 
 ```python
 import time
-from within import deadline
+from allotted import deadline
 
 done_at = time.monotonic() + 10
 with deadline(until=done_at, purpose="import"):
@@ -574,7 +574,7 @@ Subclass of `TimeoutError`. Attributes are `purpose`, `overdue`, `span`, and `ch
 
 ## Limits
 
-Synchronous code cooperates. `within` runs your function to its next `check`, `io_timeout`, or blocking call that honors the timeout you passed. A pure Python loop that never looks at the budget runs until it does.
+Synchronous code cooperates. `allotted` runs your function to its next `check`, `io_timeout`, or blocking call that honors the timeout you passed. A pure Python loop that never looks at the budget runs until it does.
 
 One blocking call can finish after the deadline by as long as that call takes to notice its own timeout. The scope then fails on the way out, or at the next check.
 

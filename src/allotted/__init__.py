@@ -1,4 +1,4 @@
-# within — one time budget for a whole call tree.
+# allotted — one time budget for a whole call tree.
 # Copyright (C) 2026 William Theesfeld
 #
 # This program is free software: you can redistribute it and/or modify
@@ -200,19 +200,19 @@ class _Arm(asyncio.Timeout):
 
 
 _clock: contextvars.ContextVar[Clock] = contextvars.ContextVar(
-    "within.clock",
+    "allotted.clock",
     default=SystemClock(),
 )
 _span: contextvars.ContextVar[Span | None] = contextvars.ContextVar(
-    "within.span",
+    "allotted.span",
     default=None,
 )
 _arm: contextvars.ContextVar[_Arm | None] = contextvars.ContextVar(
-    "within.arm",
+    "allotted.arm",
     default=None,
 )
 _leaf: contextvars.ContextVar[_Leaf | None] = contextvars.ContextVar(
-    "within.leaf",
+    "allotted.leaf",
     default=None,
 )
 
